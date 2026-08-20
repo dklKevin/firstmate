@@ -59,6 +59,8 @@ If `jq` is missing or hook stdin is empty, the guard exits 0 because it cannot s
   The guarded set is the `SessionStart` entry, the two `PreToolUse` Bash entries, and both `Stop` entries.
   Cursor 2026.08.11-e8db854 does not fire the Claude-shaped `Stop` entry at all, but it is guarded anyway because Cursor has no `asyncRewake`: if a later build did fire it, `bin/fm-claude-stop-autoarm.sh` would run synchronously inside Cursor's stop step and hold that turn open for its declared multi-hour timeout, exactly the wedge grok 1.0.0 produced.
 - Grok registers a `Stop` hook in `.grok/hooks/fm-primary-turnend-guard.json` and delegates capability selection to `bin/fm-turnend-guard-grok.sh`.
+  That project `.grok/hooks/fm-primary-*` surface is the primary-session guard; the separate global `~/.grok/hooks/fm-turn-end*` files are only the crew spawn marker.
+  Do not copy `fm-primary-*` into `~/.grok/hooks`.
   The tracked Claude Stop entries are inert when `GROK_AGENT` or `GROK_HOOK_EVENT` is present, so Grok's Claude-compatible settings loading cannot create a second continuation path.
   Both markers are required because Grok does not inject the same variables into every process kind: grok 0.2.73 set `GROK_AGENT` for child and tool processes, while grok 1.0.0 hook processes carry `GROK_HOOK_EVENT`, `GROK_HOOK_NAME`, `GROK_SESSION_ID`, and `GROK_WORKSPACE_ROOT` but no `GROK_AGENT`.
   A guard keyed on `GROK_AGENT` alone therefore stopped firing on grok 1.0.0, and the resulting Claude-only auto-arm ran synchronously under Grok - Grok has no `asyncRewake`, so it waited on the foregrounded watcher for the declared 28800-second timeout and the Grok turn never ended.
@@ -99,7 +101,8 @@ The camel-case field has precedence when both spellings appear; when it is absen
 The native path returns the shared guard's status and stderr to the same Grok process and never starts `grok --resume`.
 When both capability spellings are absent, the adapter preserves one pre-native `grok --resume` fallback guarded by `GROK_TURNEND_GUARD_ACTIVE` and intentionally omits `--permission-mode`.
 Malformed JSON, a selected field with a non-boolean type, missing `jq`, missing hook prerequisites, or an already-active legacy guard allows the stop without starting either continuation path.
-Grok's project hook requires the checkout to be trusted with `/hooks-trust` or launch-time `--trust`; genuine pre-native builds can run the same tracked hook from an isolated global hook directory.
+Grok's project `.grok/hooks/fm-primary-*` hook requires the checkout to be trusted with `/hooks-trust` or launch-time `--trust`.
+Genuine pre-native builds can run that same tracked project hook from an isolated lab hook directory; that is not `~/.grok/hooks`, and `fm-primary-*` must not be copied there.
 
 Cursor cannot block a turn end at all: its blocked-response mapper returns an empty object for the `stop` step, so exit 2 is a silent no-op, verified both statically and live.
 `bin/fm-turnend-guard-cursor.sh` therefore never exits 2 and never writes a banner expecting it to be read; every path exits 0 and its only channel is at most one `followup_message` on stdout.
@@ -141,7 +144,7 @@ That warning uses `bin/fm-supervision-instructions.sh --repair-line`, so it alwa
 - The Kimi hook remains inert unless the payload `cwd` contains a per-task token pointer that resolves through Firstmate's private registry to one `state/<id>.turn-ended` marker.
 - Kimi installation refuses before writing unless `python3` with `tomllib` and `jq` are available.
 - If `jq` is removed after installation, the Kimi hook remains silent and exits 0, turn-end wakes stop, and Kimi crews fall back to idle detection.
-- Captain-approved Grok crew wake support uses `bin/fm-grok-turnend-hook.sh` to write only firstmate-owned `fm-turn-end.sh` and `fm-turn-end.json` under the Grok hooks directory and refuse unexpected content at those paths.
+- Captain-approved Grok crew wake support uses `bin/fm-grok-turnend-hook.sh` to write only the global `~/.grok/hooks/fm-turn-end*` spawn marker and refuse unexpected content at those paths.
 - Unreadable hook input remains fail-open.
 - No harness adapter uses a shell ampersand to manufacture supervision.
 
