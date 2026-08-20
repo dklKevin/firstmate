@@ -47,6 +47,23 @@ json_escape() {
   printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g'
 }
 
+atomic_write() {
+  local path=$1 mode=${2:-} temp
+  temp=$(mktemp "${path}.tmp.XXXXXX") || return 1
+  if ! cat > "$temp"; then
+    unlink "$temp" 2>/dev/null || true
+    return 1
+  fi
+  if [ -n "$mode" ] && ! chmod "$mode" "$temp"; then
+    unlink "$temp" 2>/dev/null || true
+    return 1
+  fi
+  if ! mv -f "$temp" "$path"; then
+    unlink "$temp" 2>/dev/null || true
+    return 1
+  fi
+}
+
 regular_not_symlink() {
   local path=$1 label=$2
   if [ -L "$path" ]; then
@@ -78,31 +95,31 @@ firstmate_owned_hook_json() {
     && grep -Fq '"Stop"' "$path" 2>/dev/null
 }
 
-if [ -e "$GROK_HOME_DIR" ] && [ -L "$GROK_HOME_DIR" ]; then
+if [ -L "$GROK_HOME_DIR" ]; then
   printf 'fm-grok-turnend-hook: refused: Grok home is a symlink at %s.\n' "$GROK_HOME_DIR" >&2
   exit 1
 fi
-if [ -e "$GROK_HOOKS_DIR" ]; then
+if [ -e "$GROK_HOOKS_DIR" ] || [ -L "$GROK_HOOKS_DIR" ]; then
   if [ -L "$GROK_HOOKS_DIR" ] || [ ! -d "$GROK_HOOKS_DIR" ]; then
     printf 'fm-grok-turnend-hook: refused: Grok hooks path is not a regular directory at %s.\n' "$GROK_HOOKS_DIR" >&2
     exit 1
   fi
 fi
-if [ -e "$HOOK_SCRIPT" ]; then
+if [ -e "$HOOK_SCRIPT" ] || [ -L "$HOOK_SCRIPT" ]; then
   regular_not_symlink "$HOOK_SCRIPT" "Firstmate hook script" || exit 1
   if ! firstmate_owned_hook_script "$HOOK_SCRIPT"; then
     printf 'fm-grok-turnend-hook: refused: Firstmate hook path has unexpected content at %s.\n' "$HOOK_SCRIPT" >&2
     exit 1
   fi
 fi
-if [ -e "$HOOK_JSON" ]; then
+if [ -e "$HOOK_JSON" ] || [ -L "$HOOK_JSON" ]; then
   regular_not_symlink "$HOOK_JSON" "Firstmate hook registration" || exit 1
   if ! firstmate_owned_hook_json "$HOOK_JSON"; then
     printf 'fm-grok-turnend-hook: refused: Firstmate hook registration has unexpected content at %s.\n' "$HOOK_JSON" >&2
     exit 1
   fi
 fi
-if [ -e "$GROK_AUTH_DIR" ]; then
+if [ -e "$GROK_AUTH_DIR" ] || [ -L "$GROK_AUTH_DIR" ]; then
   if [ -L "$GROK_AUTH_DIR" ] || [ ! -d "$GROK_AUTH_DIR" ]; then
     printf 'fm-grok-turnend-hook: refused: Firstmate registry is not a regular directory at %s.\n' "$GROK_AUTH_DIR" >&2
     exit 1
@@ -115,7 +132,7 @@ mkdir -p "$GROK_AUTH_DIR" || {
 }
 
 sq_auth_dir=$(shell_quote "$GROK_AUTH_DIR")
-cat > "$HOOK_SCRIPT" <<EOF
+if ! atomic_write "$HOOK_SCRIPT" +x <<EOF
 #!/usr/bin/env bash
 $FIRSTMATE_HEADER
 set -u
@@ -134,7 +151,13 @@ case "\$t" in /*.turn-ended) : ;; *) exit 0 ;; esac
 touch "\$t" 2>/dev/null || true
 exit 0
 EOF
-chmod +x "$HOOK_SCRIPT"
+then
+  printf 'fm-grok-turnend-hook: refused: could not install Firstmate hook script at %s.\n' "$HOOK_SCRIPT" >&2
+  exit 1
+fi
 
 hook_command=$(json_escape "bash $(shell_quote "$HOOK_SCRIPT")")
-printf '{"hooks":{"Stop":[{"hooks":[{"type":"command","command":"%s"}]}]}}\n' "$hook_command" > "$HOOK_JSON"
+if ! printf '{"hooks":{"Stop":[{"hooks":[{"type":"command","command":"%s"}]}]}}\n' "$hook_command" | atomic_write "$HOOK_JSON"; then
+  printf 'fm-grok-turnend-hook: refused: could not install Firstmate hook registration at %s.\n' "$HOOK_JSON" >&2
+  exit 1
+fi

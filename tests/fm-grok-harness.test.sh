@@ -191,9 +191,26 @@ EOF
   pass "grok hook install refuses unexpected fm-turn-end.json without overwriting it"
 }
 
+test_grok_hook_refuses_dangling_hook_script() {
+  local case_dir hook outside out status
+  case_dir="$TMP_ROOT/dangling-hook-script"
+  hook="$case_dir/grok/hooks/fm-turn-end.sh"
+  outside="$case_dir/outside-hook.sh"
+  mkdir -p "$case_dir/grok/hooks"
+  ln -s "$outside" "$hook"
+  out=$(HOME="$case_dir/home" GROK_HOME="$case_dir/grok" \
+    "$ROOT/bin/fm-grok-turnend-hook.sh" install 2>&1) || status=$?
+  [ "${status:-0}" -ne 0 ] || fail "grok hook install followed a dangling hook symlink"
+  assert_contains "$out" "is a symlink" "dangling hook symlink refusal was not explicit"
+  assert_absent "$outside" "dangling hook symlink received installed content"
+  [ -L "$hook" ] || fail "dangling hook symlink was replaced after refusal"
+  pass "grok hook install refuses dangling hook symlinks"
+}
+
 test_grok_hook_requires_registered_token
 test_grok_hook_preserves_unrelated_hooks
 test_grok_hook_refuses_unexpected_hook_script
 test_grok_hook_refuses_unexpected_hook_json
+test_grok_hook_refuses_dangling_hook_script
 test_grok_teardown_removes_pointer_and_token
 test_fm_lock_recognizes_grok_holder
