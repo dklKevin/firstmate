@@ -207,10 +207,29 @@ test_grok_hook_refuses_dangling_hook_script() {
   pass "grok hook install refuses dangling hook symlinks"
 }
 
+test_grok_hook_refuses_json_control_characters() {
+  local case_dir grok_home valid_grok_home out status
+  case_dir="$TMP_ROOT/control-character-path"
+  grok_home="$case_dir/grok"$'\n'x
+  out=$(HOME="$case_dir/home" GROK_HOME="$grok_home" \
+    "$ROOT/bin/fm-grok-turnend-hook.sh" install 2>&1) || status=$?
+  [ "${status:-0}" -ne 0 ] || fail "grok hook install accepted a control character in GROK_HOME"
+  assert_contains "$out" "JSON control character" "control-character path refusal was not explicit"
+  assert_absent "$grok_home/hooks/fm-turn-end.json" "control-character path created a registration"
+  valid_grok_home="$case_dir/grok home"
+  out=$(HOME="$case_dir/home" GROK_HOME="$valid_grok_home" \
+    "$ROOT/bin/fm-grok-turnend-hook.sh" install 2>&1) \
+    || fail "grok hook install rejected a valid path containing spaces:$'\n'$out"
+  jq -e . "$valid_grok_home/hooks/fm-turn-end.json" >/dev/null 2>&1 \
+    || fail "grok hook install emitted invalid JSON for a path containing spaces"
+  pass "grok hook install refuses JSON control characters in GROK_HOME"
+}
+
 test_grok_hook_requires_registered_token
 test_grok_hook_preserves_unrelated_hooks
 test_grok_hook_refuses_unexpected_hook_script
 test_grok_hook_refuses_unexpected_hook_json
 test_grok_hook_refuses_dangling_hook_script
+test_grok_hook_refuses_json_control_characters
 test_grok_teardown_removes_pointer_and_token
 test_fm_lock_recognizes_grok_holder

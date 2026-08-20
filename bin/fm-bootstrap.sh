@@ -775,13 +775,14 @@ install_cmd() {
 
 install_tool() {
   local tool=$1 dest
-  dest=$(bootstrap_bin_dir)
   case "$tool" in
     treehouse)
+      dest=$(bootstrap_bin_dir)
       mkdir -p "$dest" || { echo "error: could not create $dest" >&2; return 1; }
       "$SCRIPT_DIR/fm-install-treehouse.sh" "$dest"
       ;;
     no-mistakes)
+      dest=$(bootstrap_bin_dir)
       mkdir -p "$dest" || { echo "error: could not create $dest" >&2; return 1; }
       "$SCRIPT_DIR/fm-install-no-mistakes.sh" "$dest"
       ;;

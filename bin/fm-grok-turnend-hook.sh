@@ -39,6 +39,13 @@ HOOK_SCRIPT="$GROK_HOOKS_DIR/fm-turn-end.sh"
 HOOK_JSON="$GROK_HOOKS_DIR/fm-turn-end.json"
 FIRSTMATE_HEADER='# Firstmate Grok turn-end hook. Managed by fm-grok-turnend-hook.sh.'
 
+case "$GROK_HOME_DIR" in
+  *[$'\001'-$'\037'$'\177']*)
+    printf 'fm-grok-turnend-hook: refused: Grok home contains a JSON control character at %s.\n' "$GROK_HOME_DIR" >&2
+    exit 1
+    ;;
+esac
+
 shell_quote() {
   printf '%s' "$1" | sed "s/'/'\\\\''/g; s/^/'/; s/\$/'/"
 }

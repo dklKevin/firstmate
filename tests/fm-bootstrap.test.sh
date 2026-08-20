@@ -677,6 +677,9 @@ SH
     || fail "gh-axi install was not version-pinned: $(cat "$npm_log")"
   grep -E '(^| )install -g gh-axi(@latest)?( |$)' "$npm_log" >/dev/null \
     && fail "gh-axi install used unpinned npm: $(cat "$npm_log")"
+  out=$(PATH="$fakebin:$BASE_PATH" NPM_LOG="$npm_log" env -u HOME \
+    "$ROOT/bin/fm-bootstrap.sh" install gh-axi 2>&1) \
+    || fail "npm tool install should not require HOME:$'\n'$out"
   pass "bootstrap install uses SHA-pinned downloads and version-pinned npm, never curl|sh or @latest"
 }
 
