@@ -962,6 +962,10 @@ families_for_changed_path() {
       # lane's contract coverage re-runs.
       printf '%s\n' real-herdr-gated
       ;;
+    bin/fm-install-no-mistakes.sh|bin/fm-grok-turnend-hook.sh)
+      printf '%s\n' session-bootstrap
+      printf '%s\n' pure-contract-unit
+      ;;
     bin/fm-lint.sh|bin/fm-lint-workflows.sh|bin/fm-install-shellcheck.sh|\
     bin/fm-install-actionlint.sh|\
     bin/fm-brief.sh|bin/fm-ensure-agents-md.sh|bin/fm-crew-state.sh|\

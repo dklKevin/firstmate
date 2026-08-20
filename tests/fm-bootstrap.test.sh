@@ -298,14 +298,14 @@ test_bootstrap_reporting() {
     esac
   done <<'ROWS'
 treehouse --lease support is accepted silently^1^0.2.4^1^manual^empty^^
-treehouse without --lease reports an upgrade, gh auth is fine^0^0.2.4^1^-^grep^MISSING: treehouse (install: curl -fsSL https://kunchenguid.github.io/treehouse/install.sh | sh)^NEEDS_GH_AUTH
+treehouse without --lease reports an upgrade, gh auth is fine^0^0.2.4^1^-^grep^MISSING: treehouse (install: fm-install-treehouse.sh ~/.local/bin)^NEEDS_GH_AUTH
 compatible tasks-axi is silent by default^1^0.2.4^1^-^empty^^
-missing tasks-axi is required by default^1^-^1^-^exact^MISSING: tasks-axi (install: npm install -g tasks-axi)^
-incompatible tasks-axi is required by default^1^0.1.0^1^-^exact^MISSING: tasks-axi (install: npm install -g tasks-axi)^
-tasks-axi without archive-body is required by default^1^0.2.4:noarchive^1^-^exact^MISSING: tasks-axi (install: npm install -g tasks-axi)^
-tasks-axi without multi-id mv is required by default^1^0.2.4:nomulti^1^-^exact^MISSING: tasks-axi (install: npm install -g tasks-axi)^
-missing quota-axi is required by default^1^0.2.4^0^manual^exact^MISSING: quota-axi (install: npm install -g quota-axi)^
-manual backlog backend still requires missing tasks-axi^1^-^1^manual^exact^MISSING: tasks-axi (install: npm install -g tasks-axi)^
+missing tasks-axi is required by default^1^-^1^-^exact^MISSING: tasks-axi (install: npm install -g tasks-axi@0.2.4)^
+incompatible tasks-axi is required by default^1^0.1.0^1^-^exact^MISSING: tasks-axi (install: npm install -g tasks-axi@0.2.4)^
+tasks-axi without archive-body is required by default^1^0.2.4:noarchive^1^-^exact^MISSING: tasks-axi (install: npm install -g tasks-axi@0.2.4)^
+tasks-axi without multi-id mv is required by default^1^0.2.4:nomulti^1^-^exact^MISSING: tasks-axi (install: npm install -g tasks-axi@0.2.4)^
+missing quota-axi is required by default^1^0.2.4^0^manual^exact^MISSING: quota-axi (install: npm install -g quota-axi@0.1.29)^
+manual backlog backend still requires missing tasks-axi^1^-^1^manual^exact^MISSING: tasks-axi (install: npm install -g tasks-axi@0.2.4)^
 manual backlog backend suppresses tasks-axi availability^1^0.2.4^1^manual^empty^^
 ROWS
   pass "bootstrap reports treehouse lease + tasks-axi/quota-axi bootstrap contracts"
@@ -313,7 +313,7 @@ ROWS
 
 test_no_mistakes_min_version() {
   local label version mode case_dir fakebin out missing n
-  missing='MISSING: no-mistakes (install: curl -fsSL https://raw.githubusercontent.com/kunchenguid/no-mistakes/main/docs/install.sh | sh)'
+  missing='MISSING: no-mistakes (install: fm-install-no-mistakes.sh ~/.local/bin)'
   n=0
   while IFS='^' read -r label version mode; do
     [ -n "$label" ] || continue
@@ -343,7 +343,7 @@ ROWS
 
 test_gh_axi_min_version() {
   local label version mode case_dir fakebin out missing n
-  missing='MISSING: gh-axi (install: npm install -g gh-axi && gh-axi setup hooks)'
+  missing='MISSING: gh-axi (install: npm install -g gh-axi@0.1.29 && gh-axi setup hooks)'
   n=0
   while IFS='^' read -r label version mode; do
     [ -n "$label" ] || continue
@@ -374,7 +374,7 @@ ROWS
 
 test_lavish_axi_min_version() {
   local label version mode case_dir fakebin out missing n
-  missing='MISSING: lavish-axi (install: npm install -g lavish-axi && lavish-axi setup hooks)'
+  missing='MISSING: lavish-axi (install: npm install -g lavish-axi@0.1.46 && lavish-axi setup hooks)'
   n=0
   while IFS='^' read -r label version mode; do
     [ -n "$label" ] || continue
@@ -405,7 +405,7 @@ ROWS
 
 test_tasks_axi_min_version() {
   local label version mode case_dir fakebin out missing n archive_body multi_id
-  missing='MISSING: tasks-axi (install: npm install -g tasks-axi)'
+  missing='MISSING: tasks-axi (install: npm install -g tasks-axi@0.2.4)'
   n=0
   while IFS='^' read -r label version mode; do
     [ -n "$label" ] || continue
@@ -455,7 +455,7 @@ ROWS
 # --version: below the floor produces MISSING, while at or above is silent.
 test_quota_axi_min_version() {
   local label version mode case_dir fakebin out missing n
-  missing='MISSING: quota-axi (install: npm install -g quota-axi)'
+  missing='MISSING: quota-axi (install: npm install -g quota-axi@0.1.29)'
   n=0
   while IFS='^' read -r label version mode; do
     [ -n "$label" ] || continue
@@ -611,6 +611,73 @@ test_herdr_install_requires_manual_action() {
   [ "$out" = "error: herdr requires manual installation (instructions: https://herdr.dev)" ] \
     || fail "install herdr should return actionable manual-install guidance, got: $out"
   pass "bootstrap: Herdr manual-install guidance is never executed as a shell command"
+}
+
+test_install_never_evals_unpinned_curl_or_npm_latest() {
+  local case_dir fakebin url_log npm_log out status
+  case_dir="$TMP_ROOT/pinned-install"
+  fakebin=$(fm_fakebin "$case_dir/fake")
+  url_log="$case_dir/curl-urls"
+  npm_log="$case_dir/npm-args"
+  mkdir -p "$case_dir/bin" "$case_dir/home"
+  cat > "$fakebin/curl" <<'SH'
+#!/usr/bin/env bash
+url=
+out=
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    -o) out=$2; shift 2 ;;
+    -*) shift ;;
+    *) url=$1; shift ;;
+  esac
+done
+[ -z "${CURL_URL_LOG:-}" ] || printf '%s\n' "$url" >> "$CURL_URL_LOG"
+: > "${out:-/dev/null}"
+exit 0
+SH
+  chmod +x "$fakebin/curl"
+  cat > "$fakebin/sha256sum" <<'SH'
+#!/usr/bin/env bash
+printf '0000000000000000000000000000000000000000000000000000000000000000  %s\n' "${1:-}"
+SH
+  chmod +x "$fakebin/sha256sum"
+  cat > "$fakebin/npm" <<'SH'
+#!/usr/bin/env bash
+printf '%s\n' "$*" >> "${NPM_LOG:?}"
+exit 0
+SH
+  chmod +x "$fakebin/npm"
+  fm_fake_exit0 "$fakebin" gh-axi chrome-devtools-axi lavish-axi
+
+  status=0
+  out=$(PATH="$fakebin:$BASE_PATH" HOME="$case_dir/home" CURL_URL_LOG="$url_log" \
+    FM_BOOTSTRAP_BIN_DIR="$case_dir/bin" \
+    "$ROOT/bin/fm-bootstrap.sh" install treehouse 2>&1) || status=$?
+  [ "$status" -ne 0 ] || fail "pinned treehouse install should fail checksum against an empty download:$'\n'$out"
+  [ -s "$url_log" ] || fail "treehouse install did not invoke the pinned downloader"
+  grep -F 'kunchenguid.github.io/treehouse/install.sh' "$url_log" >/dev/null \
+    && fail "treehouse install fetched the unpinned install.sh: $(cat "$url_log")"
+  grep -E 'github.com/.*/treehouse/releases/download/' "$url_log" >/dev/null \
+    || fail "treehouse install did not fetch a pinned GitHub release: $(cat "$url_log")"
+
+  : > "$url_log"
+  status=0
+  out=$(PATH="$fakebin:$BASE_PATH" HOME="$case_dir/home" CURL_URL_LOG="$url_log" \
+    FM_BOOTSTRAP_BIN_DIR="$case_dir/bin" \
+    "$ROOT/bin/fm-bootstrap.sh" install no-mistakes 2>&1) || status=$?
+  [ "$status" -ne 0 ] || fail "pinned no-mistakes install should fail checksum against an empty download:$'\n'$out"
+  grep -F 'raw.githubusercontent.com/kunchenguid/no-mistakes' "$url_log" >/dev/null \
+    && fail "no-mistakes install fetched the unpinned install.sh: $(cat "$url_log")"
+  grep -E 'github.com/.*/no-mistakes/releases/download/' "$url_log" >/dev/null \
+    || fail "no-mistakes install did not fetch a pinned GitHub release: $(cat "$url_log")"
+
+  out=$(PATH="$fakebin:$BASE_PATH" HOME="$case_dir/home" NPM_LOG="$npm_log" \
+    "$ROOT/bin/fm-bootstrap.sh" install gh-axi 2>&1) || fail "pinned gh-axi install failed:$'\n'$out"
+  grep -F 'install -g gh-axi@0.1.29' "$npm_log" >/dev/null \
+    || fail "gh-axi install was not version-pinned: $(cat "$npm_log")"
+  grep -E '(^| )install -g gh-axi(@latest)?( |$)' "$npm_log" >/dev/null \
+    && fail "gh-axi install used unpinned npm: $(cat "$npm_log")"
+  pass "bootstrap install uses SHA-pinned downloads and version-pinned npm, never curl|sh or @latest"
 }
 
 test_cmux_bundled_cli_satisfies_dependency() {
@@ -1159,6 +1226,7 @@ test_orca_backend_gates_orca_tool_only_when_selected
 test_session_provider_backends_do_not_require_tmux
 test_session_provider_backends_gate_own_cli_not_tmux
 test_herdr_install_requires_manual_action
+test_install_never_evals_unpinned_curl_or_npm_latest
 test_cmux_bundled_cli_satisfies_dependency
 test_unknown_backend_reports_invalid_configuration
 test_json_backends_require_jq_not_tmux

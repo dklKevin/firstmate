@@ -121,6 +121,10 @@
 #          keeps detect-only meaning unlocked, exactly as before.
 #        fm-bootstrap.sh install <tool>...
 #          Install the named tools (only ones the captain approved).
+#          treehouse and no-mistakes use the SHA-pinned installers
+#          fm-install-treehouse.sh and fm-install-no-mistakes.sh.
+#          axi-family tools use npm with the floor/pin versions owned below.
+#          This path never evals curl|sh or unpinned npm @latest.
 set -u
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -750,15 +754,61 @@ secondmate_handoff_detect() {
   done
 }
 
+bootstrap_bin_dir() {
+  printf '%s\n' "${FM_BOOTSTRAP_BIN_DIR:-$HOME/.local/bin}"
+}
+
 install_cmd() {
   case "$1" in
     tmux|node|git|gh|curl|jq|orca|zellij) echo "brew install $1  # or the platform's package manager" ;;
     cmux) echo "brew install --cask cmux  # or see https://cmux.com" ;;
-    treehouse) echo "curl -fsSL https://kunchenguid.github.io/treehouse/install.sh | sh" ;;
-    no-mistakes) echo "curl -fsSL https://raw.githubusercontent.com/kunchenguid/no-mistakes/main/docs/install.sh | sh" ;;
-    gh-axi|chrome-devtools-axi|lavish-axi) echo "npm install -g $1 && $1 setup hooks" ;;
-    tasks-axi|quota-axi) echo "npm install -g $1" ;;
+    treehouse) echo "fm-install-treehouse.sh ~/.local/bin" ;;
+    no-mistakes) echo "fm-install-no-mistakes.sh ~/.local/bin" ;;
+    gh-axi) echo "npm install -g gh-axi@${GH_AXI_MIN} && gh-axi setup hooks" ;;
+    chrome-devtools-axi) echo "npm install -g chrome-devtools-axi@${CHROME_DEVTOOLS_AXI_PIN} && chrome-devtools-axi setup hooks" ;;
+    lavish-axi) echo "npm install -g lavish-axi@${LAVISH_AXI_MIN} && lavish-axi setup hooks" ;;
+    tasks-axi) echo "npm install -g tasks-axi@${FM_TASKS_AXI_MIN}" ;;
+    quota-axi) echo "npm install -g quota-axi@${FM_QUOTA_AXI_MIN}" ;;
     *) return 1 ;;
+  esac
+}
+
+install_tool() {
+  local tool=$1 dest
+  dest=$(bootstrap_bin_dir)
+  case "$tool" in
+    treehouse)
+      mkdir -p "$dest" || { echo "error: could not create $dest" >&2; return 1; }
+      "$SCRIPT_DIR/fm-install-treehouse.sh" "$dest"
+      ;;
+    no-mistakes)
+      mkdir -p "$dest" || { echo "error: could not create $dest" >&2; return 1; }
+      "$SCRIPT_DIR/fm-install-no-mistakes.sh" "$dest"
+      ;;
+    gh-axi)
+      npm install -g "gh-axi@${GH_AXI_MIN}"
+      gh-axi setup hooks
+      ;;
+    chrome-devtools-axi)
+      npm install -g "chrome-devtools-axi@${CHROME_DEVTOOLS_AXI_PIN}"
+      chrome-devtools-axi setup hooks
+      ;;
+    lavish-axi)
+      npm install -g "lavish-axi@${LAVISH_AXI_MIN}"
+      lavish-axi setup hooks
+      ;;
+    tasks-axi)
+      npm install -g "tasks-axi@${FM_TASKS_AXI_MIN}"
+      ;;
+    quota-axi)
+      npm install -g "quota-axi@${FM_QUOTA_AXI_MIN}"
+      ;;
+    tmux|node|git|gh|curl|jq|orca|zellij|cmux)
+      eval "$(install_cmd "$tool" | sed 's/  #.*//')"
+      ;;
+    *)
+      return 1
+      ;;
   esac
 }
 
@@ -802,6 +852,8 @@ NO_MISTAKES_MIN=1.31.2
 # of its floor.
 GH_AXI_MIN=0.1.29
 LAVISH_AXI_MIN=0.1.46
+# Install pin only; chrome-devtools-axi has no separate detect floor.
+CHROME_DEVTOOLS_AXI_PIN=0.1.29
 
 treehouse_supports_lease() {
   treehouse get --help 2>&1 | grep -Eq '(^|[^[:alnum:]_-])--lease([^[:alnum:]_-]|$)'
@@ -1106,9 +1158,8 @@ if [ "${1:-}" = "install" ]; then
       echo "error: $t requires manual installation (instructions: $instructions)" >&2
       exit 1
     fi
-    cmd=${cmd%%  #*}
     echo "installing $t: $cmd"
-    eval "$cmd"
+    install_tool "$t" || exit 1
   done
   exit 0
 fi

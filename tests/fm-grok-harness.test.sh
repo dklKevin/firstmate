@@ -137,6 +137,63 @@ SH
   pass "fm-lock recognizes grok harness processes"
 }
 
+test_grok_hook_preserves_unrelated_hooks() {
+  local rec case_dir home proj wt fakebin grok_home id out status sibling
+  rec=$(make_spawn_case sibling-hooks)
+  IFS='|' read -r case_dir home proj wt fakebin grok_home id <<EOF
+$rec
+EOF
+  sibling="$grok_home/hooks/captain-custom.json"
+  mkdir -p "$grok_home/hooks"
+  printf '{"hooks":{"Stop":[{"hooks":[{"type":"command","command":"true"}]}]}}\n' > "$sibling"
+  cp "$sibling" "$case_dir/sibling-before.json"
+  out=$(run_grok_spawn "$home" "$proj" "$wt" "$fakebin" "$grok_home" "$id")
+  status=$?
+  expect_code 0 "$status" "grok spawn should succeed beside an unrelated hook"
+  cmp -s "$case_dir/sibling-before.json" "$sibling" \
+    || fail "grok spawn changed an unrelated hook file"
+  assert_present "$grok_home/hooks/fm-turn-end.sh" "firstmate hook script was not installed"
+  assert_present "$grok_home/hooks/fm-turn-end.json" "firstmate hook registration was not installed"
+  pass "grok hook install leaves unrelated ~/.grok/hooks files untouched"
+}
+
+test_grok_hook_refuses_unexpected_hook_script() {
+  local rec case_dir home proj wt fakebin grok_home id out status hook
+  rec=$(make_spawn_case unexpected-script)
+  IFS='|' read -r case_dir home proj wt fakebin grok_home id <<EOF
+$rec
+EOF
+  hook="$grok_home/hooks/fm-turn-end.sh"
+  mkdir -p "$grok_home/hooks"
+  printf '%s\n' '#!/bin/sh' 'echo captain-owned' > "$hook"
+  cp "$hook" "$case_dir/hook-before"
+  out=$(run_grok_spawn "$home" "$proj" "$wt" "$fakebin" "$grok_home" "$id") || status=$?
+  [ "${status:-0}" -ne 0 ] || fail "grok spawn overwrote an unexpected hook script"
+  assert_contains "$out" "unexpected content" "grok spawn omitted the unexpected-hook refusal"
+  cmp -s "$case_dir/hook-before" "$hook" || fail "unexpected hook script refusal changed the file"
+  pass "grok hook install refuses unexpected fm-turn-end.sh without overwriting it"
+}
+
+test_grok_hook_refuses_unexpected_hook_json() {
+  local rec case_dir home proj wt fakebin grok_home id out status json
+  rec=$(make_spawn_case unexpected-json)
+  IFS='|' read -r case_dir home proj wt fakebin grok_home id <<EOF
+$rec
+EOF
+  json="$grok_home/hooks/fm-turn-end.json"
+  mkdir -p "$grok_home/hooks"
+  printf '%s\n' '{"hooks":{"SessionStart":[]}}' > "$json"
+  cp "$json" "$case_dir/json-before"
+  out=$(run_grok_spawn "$home" "$proj" "$wt" "$fakebin" "$grok_home" "$id") || status=$?
+  [ "${status:-0}" -ne 0 ] || fail "grok spawn overwrote an unexpected hook registration"
+  assert_contains "$out" "unexpected content" "grok spawn omitted the unexpected-json refusal"
+  cmp -s "$case_dir/json-before" "$json" || fail "unexpected hook json refusal changed the file"
+  pass "grok hook install refuses unexpected fm-turn-end.json without overwriting it"
+}
+
 test_grok_hook_requires_registered_token
+test_grok_hook_preserves_unrelated_hooks
+test_grok_hook_refuses_unexpected_hook_script
+test_grok_hook_refuses_unexpected_hook_json
 test_grok_teardown_removes_pointer_and_token
 test_fm_lock_recognizes_grok_holder
