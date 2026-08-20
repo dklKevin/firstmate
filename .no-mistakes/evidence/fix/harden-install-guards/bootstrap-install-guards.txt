@@ -1,0 +1,28 @@
+Targeted end-to-end evidence for target commit 4fcdeba
+
+Focused Grok harness suite:
+  tests/fm-grok-harness.test.sh
+  ok - grok global hook requires a firstmate registry token
+  ok - grok hook install leaves unrelated ~/.grok/hooks files untouched
+  ok - grok hook install refuses unexpected fm-turn-end.sh without overwriting it
+  ok - grok hook install refuses unexpected fm-turn-end.json without overwriting it
+  ok - grok hook install refuses dangling hook symlinks
+  ok - grok hook install refuses JSON control characters in GROK_HOME
+  ok - grok teardown removes pointer and token state
+  ok - fm-lock recognizes grok harness processes
+
+Focused bootstrap suite:
+  tests/fm-bootstrap.test.sh
+  ok - bootstrap install uses SHA-pinned downloads and version-pinned npm, never curl|sh or @latest
+  exit status: 0
+
+Real pinned installers on Darwin arm64:
+  $ bin/fm-install-treehouse.sh <temporary-bin-dir>
+  fm-install-treehouse.sh: downloading treehouse-v2.0.1-darwin-arm64.tar.gz from https://github.com/kunchenguid/treehouse/releases/download/v2.0.1/treehouse-v2.0.1-darwin-arm64.tar.gz
+  fm-install-treehouse.sh: installed treehouse v2.0.1 to /var/folders/k2/d7kvgrn157x4vm92vs40g6j40000gn/T//fm-bootstrap-real-treehouse.UsT8OT/bin/treehouse
+  v2.0.1
+
+  $ bin/fm-install-no-mistakes.sh <temporary-bin-dir>
+  fm-install-no-mistakes.sh: downloading no-mistakes-v1.53.0-darwin-arm64.tar.gz from https://github.com/kunchenguid/no-mistakes/releases/download/v1.53.0/no-mistakes-v1.53.0-darwin-arm64.tar.gz
+  fm-install-no-mistakes.sh: installed no-mistakes no-mistakesversionv1.53.0(f627beb)2026-08-16T16:52:56Z to /var/folders/k2/d7kvgrn157x4vm92vs40g6j40000gn/T//fm-bootstrap-real-no-mistakes.auLZjy/bin/no-mistakes
+  no-mistakes version v1.53.0 (f627beb) 2026-08-16T16:52:56Z
