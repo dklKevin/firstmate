@@ -1,10 +1,14 @@
 #!/usr/bin/env bash
-# Acquire or inspect the per-home firstmate session lock.
+# Acquire, inspect, or release the per-home firstmate session lock.
 # Writes the harness (agent) process PID found by walking the shell's ancestry,
 # which lives as long as the firstmate session - unlike the transient subshell
 # PID of any one tool call, which is dead moments after it is written.
 # Usage: fm-lock.sh           acquire; exit 1 unless ownership is verified
 #        fm-lock.sh status    print holder and liveness; always exits 0
+#        fm-lock.sh release   drop the fleet lock so another session can start;
+#                             removes a free, stale, self-owned, or other live
+#                             holder file (does not kill processes). Exit 0 on
+#                             success, 1 if the lock file cannot be removed.
 set -u
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -30,6 +34,42 @@ if [ "${1:-}" = "status" ]; then
     exit 0
   }
   if fm_harness_pid_alive "$old"; then echo "lock: held by live harness pid $old"; else echo "lock: stale (pid $old dead or not a harness)"; fi
+  exit 0
+fi
+
+if [ "${1:-}" = "release" ]; then
+  if [ ! -e "$LOCK" ] && [ ! -L "$LOCK" ]; then
+    echo "lock released: already free"
+    exit 0
+  fi
+  if [ ! -f "$LOCK" ] || [ -L "$LOCK" ]; then
+    echo "error: session lock is not a regular file; refuse to release" >&2
+    exit 1
+  fi
+  old=$(cat "$LOCK" 2>/dev/null) || {
+    echo "error: session lock is unreadable; refuse to release" >&2
+    exit 1
+  }
+  me=""
+  me=$(fm_harness_ancestry_pid 2>/dev/null) || true
+  if [ -z "$old" ]; then
+    reason="empty"
+  elif [ -n "$me" ] && [ "$old" = "$me" ]; then
+    reason="this session (pid $old)"
+  elif fm_harness_pid_alive "$old"; then
+    reason="other live harness pid $old"
+  else
+    reason="stale pid $old"
+  fi
+  if ! rm -f "$LOCK" 2>/dev/null; then
+    echo "error: cannot remove session lock; refuse to release" >&2
+    exit 1
+  fi
+  if [ -e "$LOCK" ] || [ -L "$LOCK" ]; then
+    echo "error: session lock still present after release" >&2
+    exit 1
+  fi
+  echo "lock released: was $reason"
   exit 0
 fi
 
