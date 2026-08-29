@@ -151,11 +151,11 @@ The hook scope is the shipped enforcement boundary, and the linked-worktree nega
 ## Escape hatch
 
 `FM_ALLOW_SUBAGENT=1` in the session environment allows the call at the shipped hook.
-This is the only escape hatch and the guard fails closed on every other value, including empty, `0`, `yes`, and `true`.
+A home-local `config/allow-subagent` whose entire contents (ignoring whitespace) are exactly `1` is the standing per-home opt-in for the same release.
+Any other value, including empty, `0`, `yes`, and `true`, leaves the guard closed for that path.
 
-It is an environment variable rather than a flag, a config file, or a state file because that makes it unforgeable in-session.
-The variable must be present when the harness process is launched, so no tool call the agent makes can enable it for the call that follows.
-A deliberate use therefore requires restarting the session with the variable set, which is a conscious act, while an accidental use is impossible.
+The environment form must be present when the harness process is launched, so no tool call the agent makes can enable it for the call that follows.
+The config form is deliberate standing consent for that home: create or clear the file to flip the home, knowing that every primary session in it can then use harness delegation tools until the file is removed.
 
 The escape hatch does not affect any local Claude deny list.
 A tool removed from the schema stays removed, so a genuinely intended use of a locally denied tool also requires narrowing or removing that local entry before launch.

@@ -43,7 +43,9 @@
 #          deny object on stdout unless --claude was supplied.
 #   INERT - not a genuine primary home (a crewmate/scout task worktree or a
 #           non-firstmate repo): exit 0 with no output, exactly like ALLOW.
-#   ESCAPE - FM_ALLOW_SUBAGENT=1 in the environment allows deliberately.
+#   ESCAPE - FM_ALLOW_SUBAGENT=1 in the environment, or a home-local
+#            config/allow-subagent whose contents are exactly 1, allows
+#            deliberately.
 #   FAIL OPEN - malformed or empty stdin, or missing jq for stdin transport.
 #
 # Claude requires stdout to remain empty on deny.
@@ -100,6 +102,7 @@ crewmate/scout task worktree or any non-firstmate repo, where a worker using
 delegation tools is legitimate.
 Exits 0 to allow and 2 to deny, naming the real crewmate dispatch path instead.
 Set FM_ALLOW_SUBAGENT=1 in the session environment to allow deliberately.
+A home-local config/allow-subagent whose contents are exactly 1 is the standing per-home opt-in.
 Malformed transport fails open.
 EOF
 }
@@ -164,16 +167,21 @@ for stem in $DELEGATION_STEMS; do
 done
 [ -n "$MATCHED" ] || exit 0
 
-# The single deliberate escape hatch. It is an environment variable rather than
-# a flag or a state file so it must be set when the session is launched, which
-# makes a genuinely intended use possible and an accidental one impossible: no
-# in-session tool call can set it for the call that follows.
+# Deliberate escape hatches. The environment variable must be set when the
+# session is launched (no in-session tool call can forge it for the call that
+# follows). A home-local config/allow-subagent whose entire contents are exactly
+# "1" is the standing per-home opt-in for captains who want every session open.
 [ "${FM_ALLOW_SUBAGENT:-}" != "1" ] || exit 0
 
 SCRIPT_DIR=$(CDPATH='' cd -- "$(dirname -- "${BASH_SOURCE[0]}")" 2>/dev/null && pwd -P) || exit 0
 FM_ROOT=${FM_ROOT_OVERRIDE:-$(CDPATH='' cd -- "$SCRIPT_DIR/.." 2>/dev/null && pwd -P)} || exit 0
 FM_HOME=${FM_HOME:-${FM_ROOT_OVERRIDE:-$FM_ROOT}}
 STATE=${FM_STATE_OVERRIDE:-$FM_HOME/state}
+ALLOW_FILE=${FM_ALLOW_SUBAGENT_FILE:-$FM_HOME/config/allow-subagent}
+if [ -f "$ALLOW_FILE" ]; then
+  ALLOW_VAL=$(tr -d '[:space:]' < "$ALLOW_FILE" 2>/dev/null || true)
+  [ "$ALLOW_VAL" = "1" ] && exit 0
+fi
 
 # Scope to a genuine primary home, exactly as the session-start nudge and the
 # turn-end guard do. fm_primary_scope_matches accepts a plain checkout or a
@@ -195,7 +203,7 @@ else
   ROUTE='first classify the work under the AGENTS.md intake contract, then use bin/fm-brief.sh followed by bin/fm-spawn.sh for dispatched work'
 fi
 
-REASON="[subagent-dispatch] the firstmate primary dispatches through the fleet, not the harness's own delegation tools: work started that way has no durable fleet record, leaves every firstmate guard inert, and dies with this session. Instead, $ROUTE (blocked tool: $TOOL, delegation-shaped on \"$MATCHED\"). Launch the session with FM_ALLOW_SUBAGENT=1 for a deliberate exception."
+REASON="[subagent-dispatch] the firstmate primary dispatches through the fleet, not the harness's own delegation tools: work started that way has no durable fleet record, leaves every firstmate guard inert, and dies with this session. Instead, $ROUTE (blocked tool: $TOOL, delegation-shaped on \"$MATCHED\"). Launch the session with FM_ALLOW_SUBAGENT=1, or set config/allow-subagent to exactly 1, for a deliberate exception."
 
 json_escape() {
   printf '%s' "$1" | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g' | tr '\n' ' '

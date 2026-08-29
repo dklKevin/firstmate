@@ -176,7 +176,13 @@ test_escape_hatch_allows_deliberate_use() {
     run_tool Agent "FM_ALLOW_SUBAGENT=$value" || rc=$?
     [ "$rc" -eq 2 ] || fail "FM_ALLOW_SUBAGENT='$value' must not release the guard, got exit $rc"
   done
-  pass "the single documented escape hatch releases the guard only on the exact opt-in value"
+  mkdir -p "$PRIMARY/config"
+  printf '1\n' > "$PRIMARY/config/allow-subagent"
+  expect_allow "home config opt-in" Agent
+  printf 'yes\n' > "$PRIMARY/config/allow-subagent"
+  expect_deny "home config non-exact" Agent
+  rm -f "$PRIMARY/config/allow-subagent"
+  pass "the documented escape hatches release the guard only on the exact opt-in value"
 }
 
 test_task_worktree_and_non_firstmate_repo_are_inert() {
