@@ -1,0 +1,5 @@
+ACP_SERVER_PID=21222
+initialize: ok
+session/new: ok sessionId=cbca25be-93b0-416b-a1ea-1fcfe6384757 at t=1.45s
+turn 1 (p1.txt): sent t=1.45s completed t=22.56s elapsed=21.11s stopReason=end_turn
+server exited 0

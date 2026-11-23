@@ -1,0 +1,14 @@
+[t+40s] 66352 62498 sh               sh -c sh -c "[ -x ./bin/fm-turnend-guard-agy.sh ] && exec ./bin/fm-turnend-guard-agy.sh || exec ../bin/fm-turnend-guard-agy.sh" || cd .;66353 66352 bash             bash /private/var/folders/k2/d7kvgrn157x4vm92vs40g6j40000gn/T/fm-lab.9kR47j/primary/.agents/../bin/fm-turnend-guard-agy.sh;66440 66353 bash             bash /private/var/folders/k2/d7kvgrn157x4vm92vs40g6j40000gn/T/fm-lab.9kR47j/primary/bin/fm-watch-arm.sh;
+[t+45s] 66352 62498 sh               sh -c sh -c "[ -x ./bin/fm-turnend-guard-agy.sh ] && exec ./bin/fm-turnend-guard-agy.sh || exec ../bin/fm-turnend-guard-agy.sh" || cd .;66353 66352 bash             bash /private/var/folders/k2/d7kvgrn157x4vm92vs40g6j40000gn/T/fm-lab.9kR47j/primary/.agents/../bin/fm-turnend-guard-agy.sh;66440 66353 bash             bash /private/var/folders/k2/d7kvgrn157x4vm92vs40g6j40000gn/T/fm-lab.9kR47j/primary/bin/fm-watch-arm.sh;
+[t+50s] 66352 62498 sh               sh -c sh -c "[ -x ./bin/fm-turnend-guard-agy.sh ] && exec ./bin/fm-turnend-guard-agy.sh || exec ../bin/fm-turnend-guard-agy.sh" || cd .;66353 66352 bash             bash /private/var/folders/k2/d7kvgrn157x4vm92vs40g6j40000gn/T/fm-lab.9kR47j/primary/.agents/../bin/fm-turnend-guard-agy.sh;66440 66353 bash             bash /private/var/folders/k2/d7kvgrn157x4vm92vs40g6j40000gn/T/fm-lab.9kR47j/primary/bin/fm-watch-arm.sh;
+[t+55s] 
+[t+60s] 68355 62498 sh               sh -c sh -c "[ -x ./bin/fm-turnend-guard-agy.sh ] && exec ./bin/fm-turnend-guard-agy.sh || exec ../bin/fm-turnend-guard-agy.sh" || cd .;68356 68355 bash             bash /private/var/folders/k2/d7kvgrn157x4vm92vs40g6j40000gn/T/fm-lab.9kR47j/primary/.agents/../bin/fm-turnend-guard-agy.sh;
+[t+65s] 
+[t+70s] 
+[t+75s] 
+[t+80s] 
+[t+85s] 
+[t+90s] 
+[t+95s] 
+[t+100s] 69734 62498 sh               sh -c sh -c "[ -x ./bin/fm-turnend-guard-agy.sh ] && exec ./bin/fm-turnend-guard-agy.sh || exec ../bin/fm-turnend-guard-agy.sh" || cd .;69735 69734 bash             bash /private/var/folders/k2/d7kvgrn157x4vm92vs40g6j40000gn/T/fm-lab.9kR47j/primary/.agents/../bin/fm-turnend-guard-agy.sh;69827 69735 bash             bash /private/var/folders/k2/d7kvgrn157x4vm92vs40g6j40000gn/T/fm-lab.9kR47j/primary/bin/fm-watch-arm.sh;
+[t+105s] 69734 62498 sh               sh -c sh -c "[ -x ./bin/fm-turnend-guard-agy.sh ] && exec ./bin/fm-turnend-guard-agy.sh || exec ../bin/fm-turnend-guard-agy.sh" || cd .;69735 69734 bash             bash /private/var/folders/k2/d7kvgrn157x4vm92vs40g6j40000gn/T/fm-lab.9kR47j/primary/.agents/../bin/fm-turnend-guard-agy.sh;69827 69735 bash             bash /private/var/folders/k2/d7kvgrn157x4vm92vs40g6j40000gn/T/fm-lab.9kR47j/primary/bin/fm-watch-arm.sh;

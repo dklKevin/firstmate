@@ -1,0 +1,25 @@
+[1.45s] >>> USER PROMPT: Run exactly this one shell command with run_command (no other tool calls), then reply with only the word DONE: LAB_PRIMARY=/var/folders/k2/d7kvgrn157x4vm92vs40g6j40000gn/T//fm-lab.wGYRuo/primary bash /var/folders/k2/d7kvgrn157x4vm92vs40g6j4
+[15.88s] TOOL_CALL run_command: {"CommandLine": "LAB_PRIMARY=/var/folders/k2/d7kvgrn157x4vm92vs40g6j40000gn/T//fm-lab.wGYRuo/primary bash /var/folders/k2/d7kvgrn157x4vm92vs40g6j40000gn/T//fm-lab.wGYRuo/probe.sh", "WaitMsBeforeAsync": 10000, "toolSummary": "Run lab probe script"}
+[18.8s] TOOL_RESULT run_command status=completed:
+    Created At: 2026-11-23T09:17:26-08:00
+    Completed At: 2026-11-23T09:17:29-08:00
+    Command exited with code 0.
+    
+    Command output:
+    PROBE CLAUDECODE=1
+    PROBE ancestry (pid args):
+      26605 bash /var/folders/k2/d7kvgrn157x4vm92vs40g6j40000gn/T//fm-lab.wGYRuo/probe.sh
+      21222 /Users/kevinlee/.t3/tools/antigravity-acp/darwin-arm64/versions/26830fd46bfb9200d073cf3e71bf94b707552557b4380ec01afd6e99f3a2b030/antigravity acp --gemin
+      21221 /Library/Frameworks/Python.framework/Versions/3.14/Resources/Python.app/Contents/MacOS/Python -I /Users/kevinlee/.no-mistakes/evidence/01M84N4E2WBCD6Y8E
+      21219 /bin/zsh -c { case "${BASH_VERSINFO-}" in '2'|'3') \builtin printf '%s\n' '__CLAUDE_CODE_DID_NOT_RUN_BASH_TOO_OLD='"${BASH_VERSION-}" >&2; \builtin exit
+      21217 /bin/zsh -c { case "${BASH_VERSINFO-}" in '2'|'3') \builtin printf '%s\n' '__CLAUDE_CODE_DID_NOT_RUN_BASH_TOO_OLD='"${BASH_VERSION-}" >&2; \builtin exit
+      10220 claude --model claude-opus-5-5 --effort high -p --verbose --output-format stream-json --setting-sources user --json-schema {\012\011"type": "object",\01
+    PROBE fm-harness.sh (shallow): claude
+    PROBE fm-harness.sh (+12 nested bash hops, CLAUDECODE=1 inherited): claude
+    PROBE fm_supervision_model: autoarm
+    PROBE state/.lock: 10220
+    PROBE instructions header: ================================================================================
+    PROBE instructions Mode: Mode: Claude Stop-hook-owned supervision.
+    PROBE host lines mentioning Stop-hook park: 0
+[21.9s] AGENT: DONE
+[22.56s] <<< TURN COMPLETE stopReason=end_turn

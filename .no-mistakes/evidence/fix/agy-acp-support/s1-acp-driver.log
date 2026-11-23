@@ -1,0 +1,10 @@
+ACP_SERVER_PID=11709
+initialize: ok
+session/new: ok sessionId=975e3d8b-edd4-422d-880d-909827435590 at t=1.43s
+turn 1 (p1.txt): sent t=1.43s completed t=28.03s elapsed=26.6s stopReason=end_turn
+[client] running between-turn hook /var/folders/k2/d7kvgrn157x4vm92vs40g6j40000gn/T//fm-lab.TXj6ag/p2.hook
+[hook] created unguarded in-flight task state/task1.meta
+turn 3 (p2.txt): sent t=28.03s completed t=71.55s elapsed=43.52s stopReason=end_turn
+turn 4 (p3.txt): sent t=71.56s completed t=80.68s elapsed=9.12s stopReason=end_turn
+[client] tailing updates for 5.0s
+server exited 0

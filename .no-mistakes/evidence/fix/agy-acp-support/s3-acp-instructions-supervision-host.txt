@@ -1,0 +1,52 @@
+================================================================================
+SUPERVISION OPERATING INSTRUCTIONS - primary harness: agy
+================================================================================
+Current state:
+- Lock: held by this session; this session owns normal supervision unless away mode says otherwise.
+- Away/quiet mode: inactive.
+- X mode: inactive; use the default watcher cadence.
+- Supervision host: on; it takes away-posture wakes and, where the dialog mirror is verified, eligible attended wakes itself, and hands the rest to you (protocol at the end of this block).
+- Ordinary wake: re-arm exactly one bin/fm-supervision-host.sh park background run_command task (WaitMsBeforeAsync: 500) as directed below.
+
+<!-- fm:supervision-protocol:v3 harness=agy-acp -->
+Mode: Antigravity ACP background-notify supervision.
+
+Antigravity ACP awaits `.agents/hooks.json` `Stop` hooks before completing a prompt turn, so synchronous Stop-hook parking blocks incoming user messages and is disabled under `antigravity acp`.
+
+When this session owns supervision and away mode is not active:
+1. Drain first with `bin/fm-wake-drain.sh`.
+   After handling all emitted wakes and reconciling open decisions and unread status lines, run the exact `--ack-through` command printed as `WAKE_ACK_REQUIRED`; until then the work remains durable for idempotent re-handling after interruption.
+2. Source `/var/folders/k2/d7kvgrn157x4vm92vs40g6j40000gn/T//fm-lab.TXj6ag/config/x-mode.env` first when Relay is active.
+3. First cycle: arm with Antigravity ACP's asynchronous `run_command` tool, as its own call (`WaitMsBeforeAsync: 500`, `IsDaemon: false`), NOT by ending the turn on the Stop hook:
+   `[ -f '/var/folders/k2/d7kvgrn157x4vm92vs40g6j40000gn/T//fm-lab.TXj6ag/config/x-mode.env' ] && . '/var/folders/k2/d7kvgrn157x4vm92vs40g6j40000gn/T//fm-lab.TXj6ag/config/x-mode.env'; exec bin/fm-supervision-host.sh park`
+4. Trust only the arm's one-line status (`watcher: started ...` or `watcher: attached ...` means a live cycle exists; `watcher: FAILED ...` means supervision is down, so fix and re-arm).
+5. After starting or attaching the background arm task, end your turn with no extra tool calls so the prompt turn completes cleanly and the captain keeps full input responsiveness while the background arm runs.
+6. Waiting is silent: do not poll the background arm task or send idle progress while it waits.
+7. Never use shell `&`, truncating pipes, or command bundling for watcher supervision.
+   Those patterns are denied automatically by the PreToolUse seatbelt (`bin/fm-arm-pretool-check.sh --agy`) registered in `.agents/hooks.json`.
+
+When the background `run_command` arm finishes with an actionable wake (`signal:`, `stale:`, `check:`, or `heartbeat`):
+1. Run `bin/fm-wake-drain.sh` first.
+2. Handle all emitted wakes, open decisions, and unread status lines, then run the exact `WAKE_ACK_REQUIRED --ack-through` command.
+3. Ordinary wake: re-arm one fresh background `bin/fm-supervision-host.sh park` call (`WaitMsBeforeAsync: 500`, `IsDaemon: false`) whenever `bin/fm-supervision-lib.sh` still reports supervision needed, then end the turn cleanly.
+4. Do not invent a wake from an attach-status line alone.
+   Re-arm attaches to an existing healthy cycle when one is already present and follows its verified successor chain (see [`watcher-continuity.md`](../watcher-continuity.md)).
+
+On an ACP host that does not wake an idle session when a background task completes, queued wakes stay durable in `state/.wake-queue` and are drained with `bin/fm-wake-drain.sh` at the start of the next turn.
+
+The primary project `Stop` hook runs `bin/fm-turnend-guard-agy.sh`, which detects `antigravity acp` and delegates immediately to the non-parking bounded backstop (`bin/fm-turnend-guard.sh --agy`, 3-block repair nag before failing open with `{}`) instead of parking for the hook timeout.
+
+Supervision host: on for this home (`config/supervision-host-off` turns it off; [`supervision-host.md`](../supervision-host.md) owns the design).
+Your tracked background arm above runs the supervision host (`bin/fm-supervision-host.sh park`) in the plain arm's place, and everything above still holds with these additions:
+1. Attended (no away record; see [Postures](../supervision-host.md#postures)): every wake reaches you exactly as above, because no verified dialog mirror feeds a supervision session from this harness yet.
+2. Away (an away record exists and no daemon runs): the host hands each wake to a headless away session that runs the supervision branch's contract under the record, and you are parked.
+   Only a wake the host hands back reaches you, as the arm's background-task-completed notification whose output carries the close plus one `supervision-host: <why>` line.
+   That wake is automatic supervision, not the captain's return: drain and handle it under the away posture, and never run the return from it.
+   After the return, a `supervision-host:` line naming the captain's return during a turn means that turn has visible outcomes missing from the return brief, whether the wake was handled or handed back: relay every following `supervision-host: outcome ...` line to the captain (the rows also remain in `bin/fm-branch-outcome.sh list`), then drain and handle any queued wake before acknowledging.
+   Each such visible outcome is also a queued `check: supervision-host outcome <n> ... was recorded after the captain returned` wake, which the drain presents until acknowledged: relay each outcome once, whichever arrives first, and acknowledge its `BRANCH OUTCOMES` entry too when it has one. Silent outcomes remain in the store but do not generate a handoff line or check wake.
+3. `supervision-host: cycle boundary ...` means the host ended its park at its bound: run `bin/fm-wake-drain.sh`, handle whatever it presents, run its printed acknowledgement (an empty queue prints `--ack-through 0`), and re-arm the same background host call.
+4. A guarded command that exits 6 naming the branch actor's lease means the supervision session is handling that task right now: leave the lease alone and retry after it releases, which it does when its turn ends.
+5. Captain outcomes the away session records stay in the outcome store until the return drain presents them; the return brief (`bin/fm-afk-return.sh`) counts them and points you to the `BRANCH OUTCOMES` section for processing and acknowledgement ([Captain outcomes](../supervision-host.md#captain-outcomes)).
+6. `/afk` writes only the record here (`bin/fm-afk-launch.sh start` refuses the away daemon on this home); for `/quiet`, follow the [quiet skill](../../.agents/skills/quiet/SKILL.md).
+7. The pre-tool seatbelt does not classify the host command, so keep it exactly the one background call above: never shell `&`, a pipe, or another command bundled onto it.
+

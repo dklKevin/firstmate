@@ -1,0 +1,9 @@
+ACP_SERVER_PID=27741
+initialize: ok
+session/new: ok sessionId=7af5ca4b-496e-4dc8-95bb-73fadf8c80c7 at t=1.2s
+turn 1 (p1.txt): sent t=1.2s completed t=31.87s elapsed=30.67s stopReason=end_turn
+[client] running between-turn hook /var/folders/k2/d7kvgrn157x4vm92vs40g6j40000gn/T//fm-lab.ypyZKs/p2.hook
+[hook] created unguarded in-flight task state/task1.meta
+turn 3 (p2.txt): NO RESPONSE after 200.0s (sent t=31.88s)
+turn 4 (p3.txt): NO RESPONSE after 200.0s (sent t=232.0s)
+server exited 0
